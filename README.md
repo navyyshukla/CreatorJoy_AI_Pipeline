@@ -10,6 +10,10 @@ This repository contains a fully automated, zero-touch AI video generation pipel
 
 The architecture programmatically accepts a YouTube video URL and a topic, extracts the creator's thumbnail, generates a custom AI script, clones the creator's voice, and renders a lip-synced MP4 avatar video. The data is securely logged into a Supabase PostgreSQL database and displayed dynamically on a React frontend dashboard.
 
+## 📺 Video Demo & Walkthrough
+
+**👉 [Click Here to Watch the Full System Walkthrough & Live Demo](https://www.loom.com/share/40232d1b61ca4e719e8c8dfeb8d674e5) 👈**
+
 ---
 
 ## 🛠️ Tech Stack & Required APIs
