@@ -1,0 +1,316 @@
+{
+  "name": "My workflow 2",
+  "nodes": [
+    {
+      "parameters": {
+        "jsCode": "// 1. Grab the URL and Topic from your Webhook's body\nconst youtube_url = $input.first().json.body.youtube_url;\nconst topic = $input.first().json.body.topic;\n\n// 2. Extract the 11-character Video ID using Regex\nconst regex = /(?:youtube\\.com\\/(?:[^\\/]+\\/.+\\/|(?:v|e(?:mbed)?)\\/|.*[?&]v=)|youtu\\.be\\/)([^\"&?\\/\\s]{11})/i;\nconst match = youtube_url.match(regex);\nconst videoId = match ? match[1] : null;\n\n// 3. Construct the free high-res thumbnail URL\nconst imageUrl = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;\n\n// 4. Output the clean data for the next nodes to use\nreturn {\n  json: {\n    original_url: youtube_url,\n    video_id: videoId,\n    image_url: imageUrl,\n    script_topic: topic\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        224,
+        0
+      ],
+      "id": "19afd4a8-58c3-48d0-9b1d-225a293ca898",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "generate-video",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "55132f1f-7f26-46a1-a785-c9fd1b9a3c88",
+      "name": "Trigger: Catch YouTube Data",
+      "webhookId": "81cccf6b-172e-414d-a7ec-113eb0284483"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer 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"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"llama-3.3-70b-versatile\",\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"Write a highly engaging, technical 60-second spoken script in the style of tech creator Marques Brownlee (MKBHD).\\n\\nThe topic of the video is: {{ $json.script_topic }}\\n\\nCRITICAL RULES:\\n1. Start the script with: 'So, the headline is...'\\n2. End the script with: 'Catch you in the next one. Peace.'\\n3. The script must be exactly 150 words.\\n4. Output ONLY the spoken words. Do not include any brackets, stage directions, music cues, or quotation marks.\"\n    }\n  ],\n  \"max_tokens\": 1024\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        448,
+        0
+      ],
+      "id": "14fb47ef-b331-440b-aba0-fcd69b28f99c",
+      "name": "Generate AI Script (Groq)"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://fal.run/fal-ai/f5-tts",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Key 2f2c5045-2f12-40e5-9e4b-3422e5645dac:47a757091315b2a1b7ff7cc411a5b374"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"gen_text\": \"{{ $json.choices[0].message.content }}\",\n  \"ref_audio_url\": \"https://dl.dropboxusercontent.com/scl/fi/604mfaarakqrtpkp9ubsy/Sajjed.mp3?rlkey=zb3w3cn5jcdsw7coot7wvpgof&st=g6a35462\",\n  \"model_type\": \"F5-TTS\"\n}",
+        "options": {
+          "response": {
+            "response": {}
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        672,
+        0
+      ],
+      "id": "d95d5a77-a4a1-440c-9eb2-5c9f1a0a59be",
+      "name": "Clone Voice (Fal.ai F5-TTS)"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.d-id.com/talks",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "accept",
+              "value": "application/json"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"source_url\": \"{{ $('Code').item.json.image_url }}\",\n  \"script\": {\n    \"type\": \"audio\",\n    \"audio_url\": \"{{ $json.audio_url.url }}\"\n  }\n}",
+        "options": {
+          "response": {
+            "response": {}
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        896,
+        0
+      ],
+      "id": "c6185fc3-4ac2-464c-97fd-151594a62f0e",
+      "name": "Generate Avatar Video (D-ID)",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "iuKp2Wp5E2Y7FBwd",
+          "name": "Unnamed credential"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 30
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1120,
+        0
+      ],
+      "id": "432d57fb-81b8-42c7-857e-62d546913ce7",
+      "name": "Wait 30s for Render",
+      "webhookId": "6334d648-4054-4f84-b2c9-c1c15cddd190"
+    },
+    {
+      "parameters": {
+        "url": "https://api.d-id.com/talks/tlk_3T-jiU7OQ7oShbFM8No83",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1344,
+        0
+      ],
+      "id": "a2f3f4d6-99b4-403a-acda-7a62e38114c9",
+      "name": "Fetch Final Video (D-ID)",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "iuKp2Wp5E2Y7FBwd",
+          "name": "Unnamed credential"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "tableId": "videos",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "youtube_url",
+              "fieldValue": "={{ $('Trigger: Catch YouTube Data').item.json.body.youtube_url }}"
+            },
+            {
+              "fieldId": "topic",
+              "fieldValue": "={{ $('Trigger: Catch YouTube Data').item.json.body.topic }}"
+            },
+            {
+              "fieldId": "video_url",
+              "fieldValue": "={{ $json.result_url }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1552,
+        0
+      ],
+      "id": "277aaabf-8860-4621-a3b5-04765ba1a496",
+      "name": "Create a row",
+      "credentials": {
+        "supabaseApi": {
+          "id": "w7zieElqGtnTXsBj",
+          "name": "Supabase account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Generate AI Script (Groq)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trigger: Catch YouTube Data": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate AI Script (Groq)": {
+      "main": [
+        [
+          {
+            "node": "Clone Voice (Fal.ai F5-TTS)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clone Voice (Fal.ai F5-TTS)": {
+      "main": [
+        [
+          {
+            "node": "Generate Avatar Video (D-ID)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Avatar Video (D-ID)": {
+      "main": [
+        [
+          {
+            "node": "Wait 30s for Render",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 30s for Render": {
+      "main": [
+        [
+          {
+            "node": "Fetch Final Video (D-ID)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Final Video (D-ID)": {
+      "main": [
+        [
+          {
+            "node": "Create a row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "b1eb29a0-ffa6-444a-9fc2-8e29af7d40ac",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "607f1bf794bb4a9f6a020f830816a92a1876cbc11005b861e6a5a9bf0310ded9"
+  },
+  "id": "eI2mtvqyJZiHjnfv",
+  "tags": []
+}
