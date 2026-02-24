@@ -12,7 +12,7 @@ The architecture programmatically accepts a YouTube video URL and a topic, extra
 
 ## 📺 Video Demo & Walkthrough
 
-**👉 [Click Here to Watch the Full System Walkthrough & Live Demo](https://www.loom.com/share/40232d1b61ca4e719e8c8dfeb8d674e5) 👈**
+**👉 [Click Here to Watch the Full System Walkthrough & Live Demo](https://www.loom.com/share/91bb5bae871749c784251133ee14becc) 👈**
 
 ---
 
